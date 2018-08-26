@@ -1,17 +1,14 @@
 """
-Laboratorio 3 de Redes de Computadores por Shalini Ramchandani & Javier Arredondo
-Parte 2
-
+Laboratorio 4 de Redes de Computadores por Shalini Ramchandani & Javier Arredondo
 """
 ###################################################
 ################## Importaciones ##################
 ###################################################
-import numpy as np
-from numpy import linspace, pi, cos
+from numpy import linspace, pi, cos, random, concatenate
 import matplotlib.pyplot as plt
 from scipy.io.wavfile import read, write
 from scipy.fftpack import fft, ifft
-
+from scipy import integrate
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -44,10 +41,15 @@ def openWav(name):
                 data = info[:,dimension-1]
         n = len(data)
         Ts = n / rate
-        times = np.linspace(0, Ts, n)
+        times = linspace(0, Ts, n)
         return (rate, data, times)
 """
-Transformación de entero a binario, con n-bits
+Transformación de entero a binario, con n-bits.
+Entrada:
+        num-> Número a transformar
+        bits-> Cantidad de bits utilizados para convertir a binario
+Salida:
+        String que representa el número en binario.
 """
 def intToBin(num, bits):
         numBin = format(num, "b").zfill(bits)
@@ -55,13 +57,22 @@ def intToBin(num, bits):
                 return "1"+numBin[1:]
         return numBin
 """
-Calculo de la cantidad de bits máximos que se deben ocupar
+Calculo de la cantidad de bits máximos que se deben ocupar.
+Entrada:
+        maxi-> El número mayor de la señal de entrada.
+Salida:
+        Cantidad de bits a utilizar
 """
 def sizeBin(maxi):
         return len(format(maxi, "b")) + 1
 
 """
-Transformacion de un arreglo de enteros a binario
+Transformacion de un arreglo de enteros a binario.
+Entrada:
+        signal-> señal leída.
+Salida:
+        Señal de entrada convetida en binario. Cada número de la señal se transforma a binario
+        luego se agrega a una lista única.
 """
 def arrayToBin(signal):
 	dataBin = []
@@ -72,59 +83,127 @@ def arrayToBin(signal):
                         dataBin.append(int(i))
 	return dataBin
 
-def graphDigitalData(binSignal, duration):
+"""
+Graficar arreglo de binarios
+Entrada:
+        binSignal-> Arreglo de numeros binarios.
+        duration-> duracion del audio
+        sample-> muestra a graficar
+        title-> titulo del grafico
+"""
+def graphDigitalData(binSignal, duration, sample, bps, title):
         binFixed = []
         for i in binSignal:
-                for j in range(0, 10):
+                for j in range(0, bps):
                         binFixed.append(i)
-        print(len(binFixed))
         t = linspace(0, duration, len(binFixed))
-        print(len(t))
-        plt.plot(t[:1000], binFixed[:1000])
+        plt.plot(t[:sample*bps], binFixed[:sample*bps])
         plt.ylim(0, 2)
-        plt.xlabel('Tiempo');
-        plt.ylabel('Amplitud');
-        plt.title('Señal Digital');
+        plt.xlabel('Tiempo [s]');
+        plt.ylabel('Amplitud [dB]');
+        plt.title(title);
         plt.grid(True)
+        plt.savefig("images/"+title+".png")
         plt.show()
         return
-
+"""
+Funcion que grafica el audio
+Entrada:
+        data-> datos del audio
+        time-> vector tiempo del audio
+        title-> titulo del grafico
+        sample-> muestra a graficar
+"""
+def graphData(data, time, sample, bps, title):
+        total = sample * bps
+        plt.plot(time[0:total], data[0:total])
+        plt.ylim(-6, 6)
+        plt.xlabel('Tiempo [s]')
+        plt.ylabel('Amplitud [dB]')
+        plt.title(title)
+        plt.grid(True)
+        plt.savefig("images/"+title + ".png")
+        plt.show()
 """
 Modulacion ASK
+Entrada:
+        signal-> señal en binario
+        bps-> bits por segundo para portadora
+        duration-> duracion del audio
+        sample-> muestra para realizar ASK
+Salida:
+        - Arreglo con modulacion ASK
+        - Arreglo de tiempo para modulacion ASK
 """
-def ASKmodulation(signal, bps, duration):
+def ASKmodulation(signal, bps, duration, sample):
         A = 4  # Amplitudes de cada coseno
         B = 2
         f = 2  # Frecuencia de carrier
-        timeCarrier = linspace(0, 1 - 1/bps, bps)   # Tiempo de un coseno, 1 seg, 100 muestras
-        dataCarrier = cos(2 * pi * f * timeASK)     # Carrier: onda coseno
-        
-        signalBin = arrayToBin(signal) # Obtenemos un arreglo de los datos en binario de la señal original
-        sizeBin = len(signalBin)       # Hay 1169808 elementos. Cantidad de bits totales en el audio.
-        # Graficamos la señal digital
-        graphDigitalData(signalBin, duration)
-        
-        cutBin = signalBin[0:10000] # Recortamos la muestra. Tomamos los 10000 primeros
+        timeCarrier = linspace(0, 1 - 1/bps, bps)       # Tiempo de un coseno, 1 seg -> 100 muestras
+        dataCarrier = cos(2 * pi * f * timeCarrier)     # Carrier: onda coseno
+        sizeBin = len(signal)                           # Hay 1169808 elementos. Cantidad de bits totales en el audio.
+        cutBin = signal[0:sample]                    # Recortamos la muestra. Tomamos los 10000 primeros
         ASK = []
         for i in  cutBin:
                 if(i == 1):
-                        ASK = np.concatenate([ASK, (A * amplASK)])
+                        ASK = concatenate([ASK, (A * dataCarrier)])
                 else:
-                        ASK = np.concatenate([ASK, (B * amplASK)])
-        t = linspace(0, duration, sizeBin * len(amplASK)) # Creamos un vector tiempo para graficar. Dura 9s con un total de muchos puntos.
-        # Graficamos la señal modulada ASK
-        plt.plot(t[0:10000], ASK[0:10000])
-        plt.ylim(-6, 6)
-        plt.xlabel('Tiempo')
-        plt.ylabel('Amplitud')
-        plt.title('Señal ASK')
-        plt.grid(True)
-        plt.show()
-        return signalBin
+                        ASK = concatenate([ASK, (B * dataCarrier)])
+        t = linspace(0, duration, sizeBin * len(dataCarrier)) # Creamos un vector tiempo para graficar. Dura 9s con un total de muchos puntos.
+        return ASK, t
 
 
-print("Comienzo")
+def addNoise(signal, snr):
+        noise = random.normal(0.0, 1.0/snr, len(signal))
+        signal = signal + noise
+        return noise+signal, noise
+
+
+def ASKdemodulation(askSignal, bps):
+        f = 2
+        timeCarrier = linspace(0, 1 - 1/bps, bps)   # Tiempo de un coseno, 1 seg, 100 muestras, con 100 queda bien, 50 queda horrible
+        dataCarrier = cos(2 * pi * f * timeCarrier)     # Carrier: onda coseno
+        back = 0 # Con back y front manejamos los intervalos de integración
+        signalDemotulated = []
+        for i in range(0, len(askSignal), len(timeCarrier)): # En toda la señal recorreremos trozos del tamaño de la portadora
+                front = back + len(timeCarrier)
+                sliceSignal = dataCarrier * askSignal[back:front]
+                area = integrate.trapz(sliceSignal, timeCarrier)
+                if(area >= 1.9):
+                        signalDemotulated.append(1)
+                else:
+                        signalDemotulated.append(0)
+                back = front
+        return signalDemotulated
+                
+
+print("Modulación ASK")
+bps = 100      # Bits por segundo
+sample = 1000  # Muestra de datos a tomar, para los graficos.
+snr = 10
+# Procedimientos:
+#       1. Leer audio y calcular tiempo de duracion.
+print("> Lectura del archivo")
 rate, data, times = openWav("handel.wav")
 totalTime = len(data)/rate
-t = linspace(0, totalTime, len(data))
-ask = ASKmodulation(data, 100, totalTime)
+#       2. Binarizar audio
+print("> Binarización de audio")
+dataBin = arrayToBin(data)
+print(len(dataBin))
+graphDigitalData(dataBin, totalTime, sample, bps, "Señal digital")
+#       3. Aplicar modulacion ASK
+print("> Modulación ASK")
+askData, askTime = ASKmodulation(dataBin, bps, totalTime, sample)
+graphData(askData, askTime, sample, bps, "Señal con modulacion ASK")
+#       4. Agregar ruido a la señal
+print("> Generando ruido")
+askNoise, noise = addNoise(askData, snr)
+print("> Agregando ruido a señal modulada")
+graphData(noise, askTime, sample, bps, "Ruido")
+graphData(askNoise, askTime, sample, bps, "Señal ASK + ruido")
+#       5. Aplicar demodulacion a la señal
+print("> Demodulando")
+demodulation = ASKdemodulation(askNoise, bps)
+timeAux = len(demodulation) * totalTime / len(dataBin)
+graphDigitalData(demodulation, timeAux, sample, bps, "Señal demodulada")
+
