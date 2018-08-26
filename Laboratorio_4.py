@@ -4,7 +4,7 @@ Laboratorio 4 de Redes de Computadores por Shalini Ramchandani & Javier Arredond
 ###################################################
 ################## Importaciones ##################
 ###################################################
-from numpy import linspace, pi, cos, random, concatenate
+from numpy import linspace, pi, cos, random, concatenate, asarray
 import matplotlib.pyplot as plt
 from scipy.io.wavfile import read, write
 from scipy import integrate
@@ -76,7 +76,6 @@ Salida:
 def arrayToBin(signal):
 	dataBin = []
 	bits = sizeBin(max(signal))
-	print(bits)
 	for data in signal:
                 _bin = intToBin(data, bits)
                 for i in _bin:
@@ -107,7 +106,6 @@ def graphDigitalData(binSignal, duration, sample, bps, title):
         plt.grid(True)
         plt.savefig("images/"+title+".png")
         plt.show()
-        return
 """
 Funcion que grafica el audio
 Entrada:
@@ -145,24 +143,20 @@ def ASKmodulation(signal, bps, duration, sample):
         timeCarrier = linspace(0, 1 - 1/bps, bps)       # Tiempo de un coseno, 1 seg -> 100 muestras
         dataCarrier = cos(2 * pi * f * timeCarrier)     # Carrier: onda coseno
         sizeBin = len(signal)                           # Hay 1169808 elementos. Cantidad de bits totales en el audio.
-        cutBin = signal[0:sample]                    # Recortamos la muestra. Tomamos los 10000 primeros
+        cutBin = signal[0:sample]                       # Recortamos la muestra. Tomamos los 10000 primeros
         ASK = []
-        c = 0
         for i in  cutBin:
-                c = c + 1
-                print(c)
                 if(i == 1):
                         ASK = concatenate([ASK, (A * dataCarrier)])
                 else:
                         ASK = concatenate([ASK, (B * dataCarrier)])
         duration = len(cutBin) * duration / len(signal)
-        print(duration)
         t = linspace(0, duration, len(ASK)) # Creamos un vector tiempo para graficar. Dura 9s con un total de muchos puntos.
         return ASK, t
 
 
 def addNoise(signal, snr):
-        noise = random.normal(0.0, 1.0/snr, len(signal))
+        noise = random.normal(0.0, snr, len(signal))
         signal = signal + noise
         return noise+signal, noise
 
@@ -185,12 +179,20 @@ def ASKdemodulation(askSignal, bps):
                         signalDemotulated.append(0)
                 back = front
         return signalDemotulated
-                
+
+
+def getError(modulate, demodulate):
+        error = asarray(demodulate) - asarray(modulate)
+        count = 0
+        for i in error:
+                if i == 0:
+                        count = count + 1
+        return 1 - count/len(modulate)
 
 print("Modulación ASK")
 bps = 100         # Bits por segundo
-sample = 10000  # Muestra de datos a tomar, para los graficos. Muestra total 1169808
-snr = 10
+sample = 1000  # Muestra de datos a tomar, para los graficos. Muestra total 1169808
+snr = 0.1
 # Procedimientos:
 #       1. Leer audio y calcular tiempo de duracion.
 print("> Lectura del archivo")
@@ -208,11 +210,16 @@ graphData(askData, askTime, sample, bps, "Señal con modulacion ASK")
 print("> Generando ruido")
 askNoise, noise = addNoise(askData, snr)
 print("> Agregando ruido a señal modulada")
-graphData(noise, askTime, sample, bps, "Ruido con razon de " + str(1/snr))
+graphData(noise, askTime, sample, bps, "Ruido con razon de " + str(snr))
 graphData(askNoise, askTime, sample, bps, "Señal ASK + ruido")
 #       5. Aplicar demodulacion a la señal
 print("> Demodulando")
 demodulation = ASKdemodulation(askNoise, bps)
 timeAux = len(demodulation) * totalTime / len(dataBin)
 graphDigitalData(demodulation, timeAux, sample, bps, "Señal demodulada")
+error = getError(dataBin[:sample], demodulation)
+print("Hay un error del " + str(error * 100) + "%, respecto a la señal original")
+
+
+
 
