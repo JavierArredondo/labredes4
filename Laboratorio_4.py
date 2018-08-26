@@ -7,7 +7,6 @@ Laboratorio 4 de Redes de Computadores por Shalini Ramchandani & Javier Arredond
 from numpy import linspace, pi, cos, random, concatenate
 import matplotlib.pyplot as plt
 from scipy.io.wavfile import read, write
-from scipy.fftpack import fft, ifft
 from scipy import integrate
 import warnings
 warnings.filterwarnings('ignore')
@@ -77,6 +76,7 @@ Salida:
 def arrayToBin(signal):
 	dataBin = []
 	bits = sizeBin(max(signal))
+	print(bits)
 	for data in signal:
                 _bin = intToBin(data, bits)
                 for i in _bin:
@@ -120,7 +120,7 @@ def graphData(data, time, sample, bps, title):
         total = sample * bps
         plt.plot(time[0:total], data[0:total], color = "green")
         plt.ylim(-6, 6)
-        plt.xlim(0, time[total])
+        plt.xlim(0, time[-1])
         plt.xlabel('Tiempo [s]')
         plt.ylabel('Amplitud [dB]')
         plt.title(title)
@@ -147,12 +147,17 @@ def ASKmodulation(signal, bps, duration, sample):
         sizeBin = len(signal)                           # Hay 1169808 elementos. Cantidad de bits totales en el audio.
         cutBin = signal[0:sample]                    # Recortamos la muestra. Tomamos los 10000 primeros
         ASK = []
+        c = 0
         for i in  cutBin:
+                c = c + 1
+                print(c)
                 if(i == 1):
                         ASK = concatenate([ASK, (A * dataCarrier)])
                 else:
                         ASK = concatenate([ASK, (B * dataCarrier)])
-        t = linspace(0, duration, sizeBin * len(dataCarrier)) # Creamos un vector tiempo para graficar. Dura 9s con un total de muchos puntos.
+        duration = len(cutBin) * duration / len(signal)
+        print(duration)
+        t = linspace(0, duration, len(ASK)) # Creamos un vector tiempo para graficar. Dura 9s con un total de muchos puntos.
         return ASK, t
 
 
@@ -164,15 +169,17 @@ def addNoise(signal, snr):
 
 def ASKdemodulation(askSignal, bps):
         f = 2
+        A = 4
         timeCarrier = linspace(0, 1 - 1/bps, bps)   # Tiempo de un coseno, 1 seg, 100 muestras, con 100 queda bien, 50 queda horrible
         dataCarrier = cos(2 * pi * f * timeCarrier)     # Carrier: onda coseno
+        one = integrate.trapz(A * dataCarrier * dataCarrier, timeCarrier)        
         back = 0 # Con back y front manejamos los intervalos de integración
         signalDemotulated = []
         for i in range(0, len(askSignal), len(timeCarrier)): # En toda la señal recorreremos trozos del tamaño de la portadora
                 front = back + len(timeCarrier)
                 sliceSignal = dataCarrier * askSignal[back:front]
                 area = integrate.trapz(sliceSignal, timeCarrier)
-                if(area >= 1.9):
+                if(area >= one):
                         signalDemotulated.append(1)
                 else:
                         signalDemotulated.append(0)
@@ -181,8 +188,8 @@ def ASKdemodulation(askSignal, bps):
                 
 
 print("Modulación ASK")
-bps = 100      # Bits por segundo
-sample = 1000  # Muestra de datos a tomar, para los graficos.
+bps = 100         # Bits por segundo
+sample = 10000  # Muestra de datos a tomar, para los graficos. Muestra total 1169808
 snr = 10
 # Procedimientos:
 #       1. Leer audio y calcular tiempo de duracion.
