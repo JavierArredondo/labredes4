@@ -97,8 +97,10 @@ def graphDigitalData(binSignal, duration, sample, bps, title):
                 for j in range(0, bps):
                         binFixed.append(i)
         t = linspace(0, duration, len(binFixed))
-        plt.plot(t[:sample*bps], binFixed[:sample*bps])
+        t = t[:sample*bps]
+        plt.plot(t, binFixed[:sample*bps])
         plt.ylim(0, 2)
+        plt.xlim(0, t[-1])
         plt.xlabel('Tiempo [s]');
         plt.ylabel('Amplitud [dB]');
         plt.title(title);
@@ -116,8 +118,9 @@ Entrada:
 """
 def graphData(data, time, sample, bps, title):
         total = sample * bps
-        plt.plot(time[0:total], data[0:total])
+        plt.plot(time[0:total], data[0:total], color = "green")
         plt.ylim(-6, 6)
+        plt.xlim(0, time[total])
         plt.xlabel('Tiempo [s]')
         plt.ylabel('Amplitud [dB]')
         plt.title(title)
@@ -189,7 +192,6 @@ totalTime = len(data)/rate
 #       2. Binarizar audio
 print("> Binarización de audio")
 dataBin = arrayToBin(data)
-print(len(dataBin))
 graphDigitalData(dataBin, totalTime, sample, bps, "Señal digital")
 #       3. Aplicar modulacion ASK
 print("> Modulación ASK")
