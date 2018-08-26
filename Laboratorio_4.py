@@ -201,7 +201,7 @@ graphData(askData, askTime, sample, bps, "Señal con modulacion ASK")
 print("> Generando ruido")
 askNoise, noise = addNoise(askData, snr)
 print("> Agregando ruido a señal modulada")
-graphData(noise, askTime, sample, bps, "Ruido")
+graphData(noise, askTime, sample, bps, "Ruido con razon de " + str(1/snr))
 graphData(askNoise, askTime, sample, bps, "Señal ASK + ruido")
 #       5. Aplicar demodulacion a la señal
 print("> Demodulando")
