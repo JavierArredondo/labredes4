@@ -154,13 +154,26 @@ def ASKmodulation(signal, bps, duration, sample):
         t = linspace(0, duration, len(ASK)) # Creamos un vector tiempo para graficar. Dura 9s con un total de muchos puntos.
         return ASK, t
 
-
+"""
+Función que agrega ruido a la señal modulada.
+Entrada: signal->señal modulada
+         snr-> razón de ruido
+Salida:
+        - señal con ruido
+        - ruido
+"""
 def addNoise(signal, snr):
         noise = random.normal(0.0, snr, len(signal))
         signal = signal + noise
         return noise+signal, noise
-
-
+"""
+Función que realiza la demodulacion ASK de la señal modulada.
+Entrada:
+        askSignal-> señal modulada ASK
+        bps-> bits por segundo. Se utiliza para saber cuantos bits hay en un segundo.
+Salida:
+        señal demodulada. Señal digital
+"""
 def ASKdemodulation(askSignal, bps):
         f = 2
         A = 4
@@ -180,14 +193,21 @@ def ASKdemodulation(askSignal, bps):
                 back = front
         return signalDemotulated
 
-
-def getError(modulate, demodulate):
-        error = asarray(demodulate) - asarray(modulate)
+"""
+Función que se utiliza para obtener la cantidad porcentual de bits erroneos, respecto a la señal digital original con la digital demodulada.
+Entrada:
+        signal-> señal digital original
+        demodulate-> señal demodulada. (esta señal debería tener ruido)
+Salida:
+        porcentaje de bits erroneos
+"""
+def getError(signal, demodulate):
+        error = asarray(demodulate) - asarray(signal)
         count = 0
         for i in error:
                 if i == 0:
                         count = count + 1
-        return 1 - count/len(modulate)
+        return 1 - count/len(signal)
 
 print("Modulación ASK")
 bps = 100         # Bits por segundo
